@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Seoul Auction Scraper</title>
+    <link rel="stylesheet" href="../../css/index.css" />
+    <link rel="icon" type="image/x-icon" href="../../icons/app.ico" />
+    <script src="./app.js"></script>
+  </head>
+  <body>
+    <div class="wrap themed">
+      <!-- <header class="window_top"><div class="btn_box">
+          <i id="btn_exit" title="닫기"></i>
+          <i id="btn_minimize" title="최소화"></i>
+          <i id="btn_maximize" title="최대화"></i>
+        </div>
+        <div class="title_box"><h1>Auction Website Scraper</h1></div>
+      </header> -->
+      <div class="container">
+        <nav>
+          <p>
+            <label for="input_dirName">폴더명:</label>
+            <input
+              id="input_dirName"
+              type="text"
+              placeholder="파일이 저장될 폴더명을 입력해주세요."
+              value="xlsx"
+              autofocus
+              required
+              onkeypress="onPress()"
+            />
+          </p>
+          <div id="wrapper_checkbox">
+            <strong>경매종류선택</strong>
+            <p class="col">
+              <input id="chk_major" type="checkbox" value="major" />
+              <label for="chk_major">메이저</label>
+            </p>
+            <p class="col">
+              <input id="chk_artsy" type="checkbox" value="artsy" />
+              <label for="chk_artsy">아트시</label>
+            </p>
+            <p class="col">
+              <input id="chk_online" type="checkbox" value="online" />
+              <label for="chk_online">온라인</label>
+            </p>
+            <p class="col">
+              <input id="chk_zero" type="checkbox" value="zero" />
+              <label for="chk_zero">제로베이스</label>
+            </p>
+          </div>
+          <div
+            id="btnRunning"
+            class="btn btn_primary"
+            title="이 버튼을 눌러 실행하세요."
+            onclick="onSubmit(this)"
+          >
+            실행
+          </div>
+          <!-- <div class="btn btn_info" onclick="openFolder(this)">폴더열기</div>
+          <div
+            id="btnOpenfile"
+            class="btn btn_info disabled"
+            onclick="openFile(this)"
+          >
+            최근파일열기
+          </div> -->
+          <div
+            id="btnCancel"
+            class="btn btn_danger disabled"
+            onclick="cancel(this)"
+          >
+            실행취소
+          </div>
+          <!-- <div class="btn btn_primary" onclick="toggleCancel()">CANCEL</div> -->
+
+          <div class="state">
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+            <div class="stick"></div>
+
+            <b>불러오는 중입니다...</b>
+          </div>
+        </nav>
+        <main>
+          <table>
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>작가명(국문)</th>
+                <th>작가명(영문)</th>
+                <th>작품명(국문)</th>
+                <th>작가명(영문)</th>
+                <th>제작년도</th>
+                <th>인증 및 감정서</th>
+                <th>작품규격</th>
+                <th>재료 및 기법(국문)</th>
+                <th>재료 및 기법(영문)</th>
+                <th>사인위치</th>
+                <th>출품처</th>
+                <th>경매명</th>
+                <th>거래일</th>
+                <th>낙찰가격(단위)</th>
+                <th>낙찰가격</th>
+                <th>추정가격(단위)</th>
+                <th>추정가격(min)</th>
+                <th>추정가격(max)</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </main>
+        <div class="dimm" id="dimm"></div>
+        <div class="modal" id="modal">
+          <i class="btn_close" id="btn_close" onclick="closeModal(this);">X</i>
+          <div class="btn btn_primary" onclick="closeModal(this)">확인</div>
+          <div class="cont"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
