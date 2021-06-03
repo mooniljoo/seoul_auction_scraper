@@ -1,12 +1,18 @@
 const { ipcRenderer } = require("electron");
 const puppeteer = require("puppeteer");
-// // const shell = require("electron").shell;
+// const shell = require("electron").shell;
 // const Store = require("electron-store");
-// const fs = require("fs");
+const fs = require("fs");
 
 // store = new Store();
 
 let toggleCancel = true;
+function openDialogMsg(msg) {
+  ipcRenderer.sendSync("openDialogMsg", msg);
+}
+function openDialogError(msg) {
+  ipcRenderer.sendSync("openDialogError", msg);
+}
 function setLoading() {
   document.querySelector("nav").classList.add("loading");
   document.getElementById("btnRunning").classList.add("disabled");
@@ -22,6 +28,9 @@ function unsetLoading() {
   document.getElementById("input_dirName").removeAttribute("disabled");
   document.getElementById("input_dirName").classList.remove("disabled");
   // document.getElementById("btnOpenfile").classList.remove("disabled");
+}
+function createFolder(dirName) {
+  !fs.existsSync(dirName) && fs.mkdirSync(dirName);
 }
 async function parsing(page) {
   console.log("parsing start");
@@ -51,11 +60,20 @@ async function parsing(page) {
 
     let material = document.querySelector(".mat p:nth-child(1)")?.innerText;
 
-    let sizeEdition = document.querySelector(".mat p:nth-child(2)")?.innerText;
+    let size = document.querySelector(
+      ".title .mat span[ng-bind='size']"
+    )?.innerText;
+    let edition = document.querySelector(
+      ".title .mat span[ng-bind='lot.EDITION']"
+    )?.innerText;
+    let sizeEdition = size + " " + edition;
+    let year = document.querySelector(
+      'p[ng-if="lot.MAKE_YEAR_JSON[locale]"]'
+    )?.innerText;
 
-    let year = document.querySelector(".mat p:nth-child(3)")?.innerText;
-
-    let signPosition = document.querySelector(".mat p:nth-child(4)")?.innerText;
+    let signPosition = document.querySelector(
+      'p[ng-if="lot.SIGN_INFO_JSON[locale]"]'
+    )?.innerText;
 
     let estimate = document.querySelector(
       ".price .mat > div p:nth-child(1)"
@@ -155,7 +173,8 @@ async function scraper(url) {
   const arrAuction = getArrAuction();
   const arrClosedAuction = [];
   const arrOpenedAuction = [];
-  const res = [];
+  const arrSucSave = [];
+  const arrFailSave = [];
   if (!arrAuction) return false;
 
   //ready for browser
@@ -172,6 +191,7 @@ async function scraper(url) {
 
   //DEPTH 1 : auction
   while (toggleCancel) {
+    let res = [];
     let auctionTitle = "";
     let transactDate = "";
     //access the nav
@@ -268,6 +288,17 @@ async function scraper(url) {
       console.log(`${arrAuction[0]}를 마쳤습니다.`);
     }
     arrAuction.shift();
+    dirName = document.getElementById("input_dirName").value;
+    if (dirName) createFolder(dirName);
+    if (res.length != 0) {
+      let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirName));
+      if (!resp.includes("Error")) {
+        arrSucSave.push(resp);
+      } else {
+        arrFailSave.push(resp);
+      }
+    }
+
     if (arrAuction.length == 0) break;
   }
   // All Loops are Over
@@ -277,7 +308,12 @@ async function scraper(url) {
   console.log("Browser has closed.");
   console.log(`${arrOpenedAuction}경매가 열려있습니다.`);
   console.log(`${arrClosedAuction}경매가 열려 있지 않습니다.`);
-  return res;
+  return {
+    arrOpenedAuction: arrOpenedAuction,
+    arrClosedAuction: arrClosedAuction,
+    arrSucSave: arrSucSave,
+    arrFailSave: arrFailSave,
+  };
 }
 function onSubmit(el) {
   if (el.classList.contains("disabled")) return false;
@@ -285,9 +321,12 @@ function onSubmit(el) {
   let url = "https://www.seoulauction.com/";
   scraper(url).then((res) => {
     console.log(res);
+    openDialogMsg(
+      `${res.arrFailSave}경매를 제외한 ${arr.arrSucSave}경매 파일저장이 완료되었습니다.`
+    );
   });
   // .catch((error) => {
   //   console.error(error);
-  //   openModal(error);
+  //   // openDialogError(error);
   // });
 }

@@ -105,6 +105,7 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
     if (!res) {
       return false;
     } else {
+      console.log(res);
       let source = res[0].source;
       let transactDate = res[0].transactDate.split(".");
       let year = transactDate[0].substr(2);
@@ -127,11 +128,6 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
         date + "_" + auctionTitle, //sheetName
         obj
       );
-      console.log("XLSX has created.");
-      dialog.showMessageBox(null, {
-        message: "성공",
-        detail: fileName + ".xlsx 생성에 성공했습니다",
-      });
       event.returnValue = fileName;
     }
   } catch (e) {
@@ -142,9 +138,13 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
     event.returnValue = e;
   }
 });
-
-ipcMain.on("display_error", (event, msg) => {
+ipcMain.on("openDialogMsg", (event, msg) => {
+  console.log(msg);
+  dialog.showMessageBox(null, {
+    detail: msg,
+  });
+});
+ipcMain.on("openDialogError", (event, msg) => {
   console.error(msg);
   dialog.showErrorBox("알 수 없는 문제가 발생했습니다.\n" + msg);
-  event.returnValue = "error displayed";
 });
