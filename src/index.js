@@ -106,13 +106,14 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
       return false;
     } else {
       let source = res[0].source;
-      let transactDate = res[0].transactDate
-        .replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "")
-        .split(" ");
+      let transactDate = res[0].transactDate.split(".");
       let year = transactDate[0].substr(2);
       let mon =
         transactDate[1].length == 1 ? "0" + transactDate[1] : transactDate[1];
-      let day = transactDate[2];
+      let day =
+        transactDate[2].split("(")[0].length == 1
+          ? "0" + transactDate[2].split("(")[0]
+          : transactDate[2].split("(")[0];
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
       let auctionTitle = res[0].auctionTitle.split(" ")[0];

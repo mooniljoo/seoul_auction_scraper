@@ -7,27 +7,92 @@ const puppeteer = require("puppeteer");
 // store = new Store();
 
 let toggleCancel = true;
-
+function setLoading() {
+  document.querySelector("nav").classList.add("loading");
+  document.getElementById("btnRunning").classList.add("disabled");
+  // document.getElementById("btnCancel").classList.remove("disabled");
+  document.getElementById("input_dirName").setAttribute("disabled", "disabled");
+  document.getElementById("input_dirName").classList.add("disabled");
+  // document.getElementById("btnOpenfile").classList.add("disabled");
+}
+function unsetLoading() {
+  document.querySelector("nav").classList.remove("loading");
+  document.getElementById("btnRunning").classList.remove("disabled");
+  // document.getElementById("btnCancel").classList.add("disabled");
+  document.getElementById("input_dirName").removeAttribute("disabled");
+  document.getElementById("input_dirName").classList.remove("disabled");
+  // document.getElementById("btnOpenfile").classList.remove("disabled");
+}
 async function parsing(page) {
   console.log("parsing start");
   let description = await page.evaluate(() => {
-    let auctionTitle = document.querySelector(
-      "#container > div.contents_wrap > div > div.state_wrap > div > div > div:nth-child(1) > ul > li:nth-child(1)"
-    );
-    auctionTitle =
-      auctionTitle == null
-        ? document.querySelector(
-            "#container > div.contents_wrap > div > div.state_wrap > div > div > div:nth-child(1)"
-          ).innerText
-        : auctionTitle.innerText;
+    // let auctionTitle = document.querySelector(
+    //   "#container > div.contents_wrap > div > div.state_wrap > div > div > div:nth-child(1) > ul > li:nth-child(1)"
+    // );
+    // auctionTitle =
+    //   auctionTitle == null
+    //     ? document.querySelector(
+    //         "#container > div.contents_wrap > div > div.state_wrap > div > div > div:nth-child(1)"
+    //       ).innerText
+    //     : auctionTitle?.innerText;
     let number = document.querySelector(
-      "#container > div.contents_wrap > div > div.master_detail > div > div.right > div.author > div.lot.detail_lot > div:nth-child(1) > strong"
+      ".author span.ng-binding.ng-scope"
     )?.innerText;
-    let artistKr = document.querySelector("#artist_name > span")?.innerText;
+
+    let artistKr = document.querySelector(".author .name")?.innerText;
+
+    let artistEn = document
+      .querySelector(".author .lang")
+      ?.innerText.replace(/[^a-zA-Z]*$/, "");
+
+    let titleKr = document.querySelector(".tit p:nth-child(1)")?.innerText;
+
+    let titleEn = document.querySelector(".tit p:nth-child(2)")?.innerText;
+
+    let material = document.querySelector(".mat p:nth-child(1)")?.innerText;
+
+    let sizeEdition = document.querySelector(".mat p:nth-child(2)")?.innerText;
+
+    let year = document.querySelector(".mat p:nth-child(3)")?.innerText;
+
+    let signPosition = document.querySelector(".mat p:nth-child(4)")?.innerText;
+
+    let estimate = document.querySelector(
+      ".price .mat > div p:nth-child(1)"
+    )?.innerText;
+
+    let estimateUnit = estimate?.replace(/[^a-zA-z\s]/g, "").trim();
+    let estimateMin = estimate
+      ?.split("~")[0]
+      .replace(/[a-zA-z\s]/g, "")
+      .trim();
+    let estimateMax = estimate?.split("~")[1];
+
+    let materialKr = material?.replace(/[a-zA-z\s]/g, "").trim();
+    let materialEn = material?.replace(/[^a-zA-z\s]/g, "").trim();
+
+    let certi = "";
+    let winningBidUnit = "";
+    let winningBid = "";
+    let source = document.querySelector("title")?.innerText;
     return {
+      source,
       number,
       artistKr,
-      auctionTitle,
+      artistEn,
+      titleKr,
+      titleEn,
+      year,
+      certi,
+      sizeEdition,
+      materialKr,
+      materialEn,
+      signPosition,
+      winningBidUnit,
+      winningBid,
+      estimateUnit,
+      estimateMin,
+      estimateMax,
     };
   });
   return description;
@@ -86,6 +151,7 @@ async function configureBrowser() {
   return browser;
 }
 async function scraper(url) {
+  setLoading();
   const arrAuction = getArrAuction();
   const arrClosedAuction = [];
   const arrOpenedAuction = [];
@@ -99,13 +165,15 @@ async function scraper(url) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
   // close the modal
-  await page.waitForSelector("#closebtn", { timeout: 9000 });
+  await page.waitForTimeout(1000);
   const button_closeModal = await page.$("#closebtn");
   if (button_closeModal != null) button_closeModal.click();
   await page.waitForTimeout(3000);
 
   //DEPTH 1 : auction
   while (toggleCancel) {
+    let auctionTitle = "";
+    let transactDate = "";
     //access the nav
     await page.hover(".fl_menu > li");
     await page.waitForTimeout(5000);
@@ -143,6 +211,21 @@ async function scraper(url) {
       arrOpenedAuction.push(arrAuction[0]);
       button_auction.click();
 
+      await page.waitForTimeout(1000);
+      //scraping auctionTitle, transactDate
+      const elem_auctionTitle = await page.waitForSelector(
+        "div.tit > span:nth-child(2)",
+        { timeout: 9000 }
+      );
+      auctionTitle = await elem_auctionTitle.evaluate((el) => el.innerText);
+      console.log(`auctionTitle : ${auctionTitle}`);
+
+      const elem_transactDate = await page.waitForSelector(
+        "div.sub.lotlist_memobox > p.ng-scope > span.ng-binding",
+        { timeout: 9000 }
+      );
+      transactDate = await elem_transactDate.evaluate((el) => el.innerText);
+
       // DEPTH 2 : pagination
       let pageIndex = 2;
       while (toggleCancel) {
@@ -169,6 +252,7 @@ async function scraper(url) {
           // parsing
           await page.waitForTimeout(1000);
           let description = await parsing(page);
+          description = { ...description, auctionTitle, transactDate };
           console.log(description);
           res.push(description);
           //displaying
@@ -187,7 +271,9 @@ async function scraper(url) {
     if (arrAuction.length == 0) break;
   }
   // All Loops are Over
-  await browser.close();
+  console.log(`All Loops are over.`);
+  browser.close();
+  unsetLoading();
   console.log("Browser has closed.");
   console.log(`${arrOpenedAuction}경매가 열려있습니다.`);
   console.log(`${arrClosedAuction}경매가 열려 있지 않습니다.`);
