@@ -202,6 +202,8 @@ table {
   justify-content: space-around;
 }
 nav {
+  display: flex;
+  flex-direction: column;
   padding: 10px 0;
 }
 nav > p {
@@ -212,21 +214,46 @@ nav > p > label {
   display: inline-block;
   align-self: center;
 }
-nav > p > input {
-  flex: 1 1 auto;
-  margin-left: 10px;
-  border-bottom: 1.5px solid transparent;
+nav,
+nav input {
+  font-size: 1.3em;
+  font-weight: 700;
 }
 input:focus {
   transition: all 0.5s linear;
   border-bottom: 1.5px solid #3f3f3f;
+}
+nav > div {
+  display: flex;
+}
+nav > div > .btn {
+  margin-right: 5px;
 }
 nav,
 nav input {
   font-size: 1.3em;
   font-weight: 700;
 }
-nav.loading > .state > b {
+input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  vertical-align: text-top;
+}
+.wrapper_checkbox {
+  display: flex;
+  margin: 0.5em 0;
+}
+.wrapper_checkbox > .col {
+  margin-right: 10px;
+}
+.wrapper_checkbox > .col > input,
+.wrapper_checkbox > .col > label {
+  display: inline-block;
+}
+.state {
+  margin: 5px 0;
+}
+.state.on > strong {
   display: inline;
   text-transform: uppercase;
   font-size: 1em;
@@ -234,22 +261,24 @@ nav.loading > .state > b {
   text-align: center;
   width: 155px;
   margin-top: 20px;
+  margin-right: 10px;
   -webkit-animation: fade 2s infinite;
   -moz-animation: fade 2s infinite;
 }
-nav > .state > .stick,
-nav > .state > b {
+.state > .stick,
+.state > strong {
   display: none;
 }
-nav.loading > .state > .stick {
+.state.on > .stick {
   display: inline-block;
   width: 30px;
-  height: 3px;
-  background: #3f3f3f;
-  margin-left: -8px;
+  height: 2px;
+  background: #a7a7a7;
+  margin-left: -7px;
+  vertical-align: super;
 }
 
-nav.loading > .state > .stick:nth-child(n) {
+.state.on > .stick:nth-child(n) {
   transform: rotate(30deg);
   -ms-transform: rotate(30deg); /* IE 9 */
   -webkit-transform: rotate(30deg); /* Safari and Chrome */
@@ -257,7 +286,7 @@ nav.loading > .state > .stick:nth-child(n) {
   -webkit-animation: fall 2s infinite;
   -moz-animation: fall 2s infinite;
 }
-nav.loading > .state > .stick:nth-child(2n) {
+.state.on > .stick:nth-child(2n) {
   transform: rotate(-30deg);
   -ms-transform: rotate(-30deg); /* IE 9 */
   -webkit-transform: rotate(-30deg); /* Safari and Chrome */
@@ -411,17 +440,6 @@ nav.loading > .state > .stick:nth-child(2n) {
   font-style: normal;
   text-align: center;
   color: #fff;
-}
-.wrapper_checkbox {
-  display: flex;
-  margin: 0.5em 0;
-}
-.wrapper_checkbox > .col {
-  margin-right: 20px;
-}
-.wrapper_checkbox > .col > input,
-.wrapper_checkbox > .col > label {
-  display: inline-block;
 }
 
 select {

@@ -18,7 +18,7 @@
       </header> -->
       <div class="container">
         <nav>
-          <p>
+          <!-- <p>
             <label for="input_dirName">폴더명:</label>
             <input
               id="input_dirName"
@@ -29,7 +29,7 @@
               required
               onkeypress="onPress()"
             />
-          </p>
+          </p> -->
           <div id="wrapper_checkbox" class="wrapper_checkbox">
             <p class="col">
               <input id="chk_major" type="checkbox" value="major" checked />
@@ -48,15 +48,16 @@
               <label for="chk_zero">제로베이스</label>
             </p>
           </div>
-          <div
-            id="btnRunning"
-            class="btn btn_primary"
-            title="이 버튼을 눌러 실행하세요."
-            onclick="onSubmit(this)"
-          >
-            실행
-          </div>
-          <!-- <div class="btn btn_info" onclick="openFolder(this)">폴더열기</div>
+          <div>
+            <div
+              id="btnRunning"
+              class="btn btn_primary"
+              title="이 버튼을 눌러 실행하세요."
+              onclick="onSubmit(this)"
+            >
+              실행
+            </div>
+            <!-- <div class="btn btn_info" onclick="openFolder(this)">폴더열기</div>
           <div
             id="btnOpenfile"
             class="btn btn_info disabled"
@@ -64,26 +65,35 @@
           >
             최근파일열기
           </div> -->
-          <div
-            id="btnCancel"
-            class="btn btn_danger disabled"
-            onclick="cancel(this)"
-          >
-            실행취소
-          </div>
-          <!-- <div class="btn btn_primary" onclick="toggleCancel()">CANCEL</div> -->
-
-          <div class="state">
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-
-            <b>불러오는 중입니다...</b>
+            <div
+              id="btnCancel"
+              class="btn btn_danger disabled"
+              onclick="cancel(this)"
+            >
+              실행취소
+            </div>
+            <div
+              class="btn btn_info"
+              onclick="openFolder()"
+              title="파일이 저장될 폴더를 선택해주세요"
+            >
+              폴더 선택
+            </div>
+            <input id="input_dirPath" type="text" value="" disabled />
           </div>
         </nav>
+
+        <div class="state">
+          <strong>불러오는 중입니다...</strong>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+        </div>
         <main>
           <table>
             <thead>

@@ -138,13 +138,24 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
     event.returnValue = e;
   }
 });
+ipcMain.on("openDialogFile", (event, path) => {
+  dialog
+    .showOpenDialog(null, {
+      defaultPath: path,
+      properties: ["openDirectory"],
+    })
+    .then((res) => (event.returnValue = res));
+});
 ipcMain.on("openDialogMsg", (event, msg) => {
   console.log(msg);
   dialog.showMessageBox(null, {
     detail: msg,
   });
+  event.returnValue = "";
 });
+
 ipcMain.on("openDialogError", (event, msg) => {
   console.error(msg);
-  dialog.showErrorBox("알 수 없는 문제가 발생했습니다.\n" + msg);
+  dialog.showErrorBox(msg);
+  event.returnValue = "";
 });
