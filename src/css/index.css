@@ -1,5 +1,6 @@
 html,
-body {
+body,
+p {
   margin: 0;
   padding: 0;
 }
@@ -411,6 +412,17 @@ nav.loading > .state > .stick:nth-child(2n) {
   text-align: center;
   color: #fff;
 }
+.wrapper_checkbox {
+  display: flex;
+  margin: 0.5em 0;
+}
+.wrapper_checkbox > .col {
+  margin-right: 20px;
+}
+.wrapper_checkbox > .col > input,
+.wrapper_checkbox > .col > label {
+  display: inline-block;
+}
 
 select {
   display: inline-block;
@@ -440,6 +452,12 @@ td {
 th,
 td {
   padding: 0.18em;
+  max-width: 95px;
+}
+th {
+  word-break: keep-all;
+  padding: 0.3em 1px;
+  background: rgb(0 0 0 / 2%);
 }
 th:nth-child(1),
 td:nth-child(1) {
