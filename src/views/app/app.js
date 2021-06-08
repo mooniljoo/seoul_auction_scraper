@@ -1,15 +1,13 @@
 const { ipcRenderer } = require("electron");
 const puppeteer = require("puppeteer");
 const rootPath = require("electron-root-path").rootPath;
-// const shell = require("electron").shell;
-// const Store = require("electron-store");
+const shell = require("electron").shell;
 const fs = require("fs");
 
 document.addEventListener("DOMContentLoaded", (event) => {
   console.log("DOM fully loaded and parsed");
   document.getElementById("input_dirPath").value = rootPath;
 });
-// store = new Store();
 
 let toggleCancel = true;
 function openDialogMsg(msg) {
@@ -21,25 +19,32 @@ function openDialogError(msg) {
 function setLoading() {
   document.querySelector(".state").classList.add("on");
   document.getElementById("btnRunning").classList.add("disabled");
+  document.getElementById("btnSelectDirPath").classList.add("disabled");
+  document.getElementById("btnOpenDir").classList.add("disabled");
   document.getElementById("btnCancel").classList.remove("disabled");
-  // document.getElementById("input_dirName").setAttribute("disabled", "disabled");
-  // document.getElementById("input_dirName").classList.add("disabled");
-  // document.getElementById("btnOpenfile").classList.add("disabled");
+  document.getElementById("btnCancel").classList.remove("disabled");
 }
 function unsetLoading() {
   document.querySelector(".state").classList.remove("on");
   document.getElementById("btnRunning").classList.remove("disabled");
+  document.getElementById("btnSelectDirPath").classList.remove("disabled");
+  document.getElementById("btnOpenDir").classList.remove("disabled");
   document.getElementById("btnCancel").classList.add("disabled");
-  // document.getElementById("input_dirName").removeAttribute("disabled");
-  // document.getElementById("input_dirName").classList.remove("disabled");
-  // document.getElementById("btnOpenfile").classList.remove("disabled");
 }
 
+function openDir(el) {
+  //check this element is disabled or not
+  if (el.classList.contains("disabled")) return;
+  let dirPath = document.getElementById("input_dirPath").value;
+  console.log("open the folder", dirPath);
+  shell.openExternal(dirPath);
+}
 function cancel(el) {
   if (el.classList.contains("disabled")) {
     console.log("This button is disabled.");
   } else {
     console.log("Press the Cancel");
+    document.getElementById("stateMsg").innerText = "취소중입니다...";
     toggleCancel = false;
     openDialogMsg("취소되었습니다.");
   }
@@ -341,19 +346,23 @@ function onSubmit(el) {
   scraper(url).then((res) => {
     console.log(res);
     let msg = "";
-    if (res.arrOpenedAuction.length != 0) {
-      msg = `열려있는 경매가 없습니다.`;
-    } else if (res.arrOpenedAuction.length > 0 && res.arrSucSave.length != 0) {
-      msg = `${res.arrSucSave}경매 파일저장이 완료되었습니다.`;
-      if (res.arrClosedAuction.length != 0)
-        msg += `\n${res.arrClosedAuction}는 아직 열려있지 않습니다.`;
-    } else if (res.arrOpenedAuction.length == 0) {
-      msg = `\n열려있는 경매가 없습니다.`;
-    } else {
-      msg = `ERROR: 결과를 분석할수 없습니다. \n${res}`;
+    if (toggleCancel) {
+      if (res.arrOpenedAuction.length != 0) {
+        msg = `열려있는 경매가 없습니다.`;
+      } else if (
+        res.arrOpenedAuction.length > 0 &&
+        res.arrSucSave.length != 0
+      ) {
+        msg = `${res.arrSucSave}경매 파일저장이 완료되었습니다.`;
+        if (res.arrClosedAuction.length != 0)
+          msg += `\n${res.arrClosedAuction}는 아직 열려있지 않습니다.`;
+      } else if (res.arrOpenedAuction.length == 0) {
+        msg = `\n열려있는 경매가 없습니다.`;
+      } else {
+        msg = `ERROR: 결과를 분석할수 없습니다. \n${res}`;
+      }
+      openDialogMsg(msg);
     }
-
-    openDialogMsg(msg);
   });
   // .catch((error) => {
   //   console.error(error);

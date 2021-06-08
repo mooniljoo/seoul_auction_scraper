@@ -73,18 +73,27 @@
               실행취소
             </div>
             <div
+              id="btnSelectDirPath"
               class="btn btn_info"
-              onclick="openFolder()"
-              title="파일이 저장될 폴더를 선택해주세요"
+              onclick="openDialogFile(this)"
+              title="버튼을 눌러 파일이 저장될 폴더를 선택합니다"
             >
               폴더 선택
+            </div>
+            <div
+              id="btnOpenDir"
+              class="btn btn_info"
+              onclick="openDir(this)"
+              title="버튼을 눌러 파일이 저장될 폴더를 봅니다"
+            >
+              폴더 열기
             </div>
             <input id="input_dirPath" type="text" value="" disabled />
           </div>
         </nav>
 
         <div class="state">
-          <strong>불러오는 중입니다...</strong>
+          <strong id="stateMsg">불러오는 중입니다...</strong>
           <div class="stick"></div>
           <div class="stick"></div>
           <div class="stick"></div>
