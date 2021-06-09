@@ -1,8 +1,8 @@
 {
   "name": "scarper",
-  "productName": " Seoul Auction Scraper",
+  "productName": "Seoul Auction Scraper",
   "version": "1.0.1",
-  "description": "Auction Website Scraper with content",
+  "description": "Auction Web Scraper with content",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -20,13 +20,13 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "icon": "src/icons/app.icns"
+        "icon": "src/icons/app.ico"
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "Scraper"
+            "name": "AuctionScraper"
           }
         },
         {

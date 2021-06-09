@@ -12,6 +12,8 @@ body,
 input {
   font-size: 13px;
   font-family: "Apple SD Gothic Neo", arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: auto;
 }
 .dimm {
   display: none;
@@ -402,7 +404,7 @@ input[type="checkbox"] {
   background-color: #268fff;
 }
 .btn_info {
-  background-color: #949494;
+  background-color: #aaa;
 }
 .btn_info:hover,
 .btn_info:focus {
@@ -471,6 +473,7 @@ th,
 td {
   padding: 0.18em;
   max-width: 95px;
+  overflow: hidden;
 }
 th {
   word-break: keep-all;
@@ -502,6 +505,9 @@ tr:nth-child(2n) {
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #222;
+  }
+  .btn.btn_info {
+    background-color: #666;
   }
   .btn.disabled {
     background-color: #333 !important;
