@@ -1,6 +1,6 @@
 {
   "name": "scarper",
-  "productName": " Auction Website Scraper",
+  "productName": " Seoul Auction Scraper",
   "version": "1.0.1",
   "description": "Auction Website Scraper with content",
   "main": "src/index.js",
