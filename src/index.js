@@ -99,7 +99,7 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("create_xlsx", (event, res, dirName) => {
+ipcMain.on("create_xlsx", (event, res, dirName, auctionCategory) => {
   // console.log(res);
   try {
     if (!res) {
@@ -118,14 +118,14 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
           : transactDate[2].split("(")[0];
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-      let fileName = auctionTitle + "_" + date + "_" + source;
+      let fileName = auctionTitle + "_" + date + "_" + auctionCategory;
       console.log("fileName", fileName);
 
       let obj = renameObj(res);
       fileName = jsonToXlsx.write(
         dirName, //dirName
         fileName, //fileName
-        date + "_" + source, //sheetName
+        date + "_" + auctionCategory, //sheetName
         obj
       );
       event.returnValue = fileName;
