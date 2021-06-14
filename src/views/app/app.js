@@ -195,16 +195,13 @@ async function scraper(url) {
           console.log(arrArtwork);
           console.log(arrArtwork[artworkIndex]);
           console.log(
-            (await arrArtwork[artworkIndex].$(
-              "div.cancel.auction_grid_cancel.ng-hide"
-            )) != null
+            (await arrArtwork[artworkIndex].$("div.cancel.ng-hide")) != null
           );
           if (
-            (await arrArtwork[artworkIndex].$(
-              "div.cancel.auction_grid_cancel.ng-hide"
-            )) != null
+            (await arrArtwork[artworkIndex].$("div.cancel.ng-hide")) != null
           ) {
-            arrArtwork[artworkIndex].click();
+            let link = await arrArtwork[artworkIndex].$(".info > a");
+            link.click();
             // parsing
             await page.waitForTimeout(1000);
             let description = await parsing(page);
@@ -319,7 +316,7 @@ function onSubmit(el) {
     })
     .catch((err) => {
       console.error(err);
-      // openDialogError(err);
+      openDialogError(err);
     });
 }
 function openDialogFile(el) {
