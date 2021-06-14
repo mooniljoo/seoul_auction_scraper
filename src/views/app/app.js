@@ -116,14 +116,16 @@ async function scraper(url) {
     let selector_auction;
     if (arrAuction[0] == "major") {
       selector_auction =
-        "#gnbMenuConatiner >div >ul> li:nth-child(1) > ul > li:nth-child(1) > span";
+        "#gnbMenuConatiner >div >ul> li:nth-child(1) > ul > li:nth-child(1)";
     } else if (arrAuction[0] == "online") {
       selector_auction =
-        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(1) > span";
+        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(1)";
     } else if (arrAuction[0] == "artsy") {
-      selector_auction = "#outsideIngBtn > span";
+      selector_auction =
+        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(3)";
     } else if (arrAuction[0] == "zero") {
-      selector_auction = "#zerobaseBtn > span";
+      selector_auction =
+        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(5)";
     } else {
       console.error(
         "웹사이트의 구조가 바뀌었거나 선택하여 불러오려고 하는 옥션의 설정값이 시스템에 저장되어 있지 않습니다."
@@ -139,7 +141,7 @@ async function scraper(url) {
     console.log(selector_auction);
     await page.waitForSelector(selector_auction, { timeout: 9000 });
 
-    const button_auction = await page.$(selector_auction + "> a");
+    const button_auction = await page.$(selector_auction + " > span > a");
     console.log(button_auction);
     if (button_auction == null) {
       console.log(
@@ -184,7 +186,7 @@ async function scraper(url) {
         // DEPTH 3 : artwork
         let artworkIndex = 0;
         while (boolRunning) {
-          await page.waitForTimeout(1500);
+          await page.waitForTimeout(2000);
           await page.waitForSelector("#auctionList > li", { timeout: 9000 });
           const arrArtwork = await page.$$("#auctionList > li");
           //check if artwork exists
@@ -192,18 +194,29 @@ async function scraper(url) {
           //access to new artwork page
           console.log(arrArtwork);
           console.log(arrArtwork[artworkIndex]);
-          arrArtwork[artworkIndex].click();
-          // parsing
-          await page.waitForTimeout(1000);
-          let description = await parsing(page);
-          description = { ...description, source, transactDate };
-          console.log(description);
-          res.push(description);
-          //displaying
-          await display_table([description]);
-          // go again
-          await page.goBack();
-          console.log("artwork " + (artworkIndex + 1) + " has completed.");
+          console.log(
+            (await arrArtwork[artworkIndex].$(
+              "div.cancel.auction_grid_cancel.ng-hide"
+            )) != null
+          );
+          if (
+            (await arrArtwork[artworkIndex].$(
+              "div.cancel.auction_grid_cancel.ng-hide"
+            )) != null
+          ) {
+            arrArtwork[artworkIndex].click();
+            // parsing
+            await page.waitForTimeout(1000);
+            let description = await parsing(page);
+            description = { ...description, source, transactDate };
+            console.log(description);
+            res.push(description);
+            //displaying
+            await display_table([description]);
+            // go again
+            await page.goBack();
+            console.log("artwork " + (artworkIndex + 1) + " has completed.");
+          }
           artworkIndex++;
         }
         console.log("artwork " + (pageIndex - 1) + " has completed.");
@@ -211,19 +224,18 @@ async function scraper(url) {
       }
       console.log(`${arrAuction[0]}를 마쳤습니다.`);
     }
-    arrAuction.shift();
-    // dirName = document.getElementById("input_dirPath").value;
-    // if (dirName) createFolder(dirName);
-
     let dirPath = document.getElementById("input_dirPath").value;
     if (res.length != 0) {
-      let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirPath));
+      let resp = String(
+        ipcRenderer.sendSync("create_xlsx", res, dirPath, arrAuction[0])
+      );
       if (!resp.includes("Error")) {
         arrSuccessfulAuctionsSaved.push(resp);
       } else {
         arrFailedAuctionsSaved.push(resp);
       }
     }
+    arrAuction.shift();
 
     if (arrAuction.length == 0) break;
   }
@@ -306,7 +318,8 @@ function onSubmit(el) {
       openDialogMsg(msg);
     })
     .catch((err) => {
-      openDialogError(err);
+      console.error(err);
+      // openDialogError(err);
     });
 }
 function openDialogFile(el) {
