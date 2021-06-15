@@ -358,9 +358,12 @@ async function parsing(page) {
       .querySelector(".author .lang")
       ?.innerText.replace(/[^a-zA-Z]*$/, "");
 
-    let titleKr = document.querySelector(".tit p:nth-child(1)")?.innerText;
-
-    let titleEn = document.querySelector(".tit p:nth-child(2)")?.innerText;
+    let titleKr = document.querySelector(".tit p:nth-child(1)").innerText;
+    let titleEn = document.querySelector(".tit p:nth-child(2)").innerText;
+    if (!/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(titleKr)) {
+      titleEn = titleKr;
+      titleKr = "";
+    }
 
     let material = document.querySelector(
       'span[ng-if="lot.MATE_NM_EN"]'
