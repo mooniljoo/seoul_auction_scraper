@@ -108,7 +108,7 @@ async function scraper(url) {
 
   //DEPTH 1 : auction
   while (boolRunning) {
-    let res = [];
+    let auctionResult = [];
     let source = "";
     let transactDate = "";
     // select the auction
@@ -157,8 +157,12 @@ async function scraper(url) {
       console.log("AUCTION BUTTON CLICK!");
       button_auction.click();
 
+      // parsing outer description of artwork
       await page.waitForTimeout(1000);
-      //scraping source, transactDate
+
+      let outerDesc;
+      let winningBid = "";
+      let winningBidUnit = "";
       const elem_source = await page.waitForSelector(
         "div.tit > span:nth-child(2)",
         { timeout: 9000 }
@@ -171,60 +175,73 @@ async function scraper(url) {
         { timeout: 9000 }
       );
       transactDate = await elem_transactDate.evaluate((el) => el.innerText);
+      outerDesc = { source, transactDate, winningBid, winningBidUnit };
 
       // DEPTH 2 : pagination
       let pageIndex = 2;
       while (boolRunning) {
-        console.log(pageIndex - 2);
+        ///// ready for next page
         await page.waitForTimeout(1000);
         await page.waitForSelector("div.left .page_ul", { timeout: 9000 });
-        const arrPagination = await page.$$("div.left .page_ul > li");
+        const arrPagination = await page.$$("div.left .page_ul > li > a");
+        console.log(`(${pageIndex} / ${arrPagination.length})`);
         if (pageIndex == arrPagination.length - 2) break;
-        console.log(arrPagination);
-        console.log(arrPagination[pageIndex]);
+        console.log("pageIndex", pageIndex);
         arrPagination[pageIndex].click();
         // DEPTH 3 : artwork
         let artworkIndex = 0;
+        let artworkCount = 0;
         while (boolRunning) {
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(1000);
           await page.waitForSelector("#auctionList > li", { timeout: 9000 });
           const arrArtwork = await page.$$("#auctionList > li");
+          artworkCount = arrArtwork.length;
           //check if artwork exists
+          console.log(artworkIndex, arrArtwork.length);
           if (artworkIndex == arrArtwork.length) break;
           //access to new artwork page
-          console.log(arrArtwork);
-          console.log(arrArtwork[artworkIndex]);
-          console.log(
-            (await arrArtwork[artworkIndex].$("div.cancel.ng-hide")) != null
-          );
           if (
             (await arrArtwork[artworkIndex].$("div.cancel.ng-hide")) != null
           ) {
             let link = await arrArtwork[artworkIndex].$(".info > a");
             link.click();
             // parsing
-            await page.waitForTimeout(1000);
-            let description = await parsing(page);
-            description = { ...description, source, transactDate };
-            console.log(description);
-            res.push(description);
-            //displaying
+            await page.waitForTimeout(500);
+            let innerDesc = await parsing(page);
+            description = { ...outerDesc, ...innerDesc };
+            console.log(
+              `(${artworkIndex + 1}/${artworkCount}) ${description.number}|${
+                description.artistKr || description.artistEn
+              }|${description.titleKr || description.titleEn} has completed.`
+            );
+            auctionResult.push(description);
+            // displaying description
             await display_table([description]);
             // go again
             await page.goBack();
-            console.log("artwork " + (artworkIndex + 1) + " has completed.");
+            console.log("back");
+            await page.waitForTimeout(500);
           }
           artworkIndex++;
         }
-        console.log("artwork " + (pageIndex - 1) + " has completed.");
         pageIndex++;
       }
-      console.log(`${arrAuction[0]}를 마쳤습니다.`);
+      console.log(`${arrAuction[0]}경매 파싱을 마쳤습니다.`);
+
+      console.log(
+        `${auctionResult.length}개의 작품이 ${arrAuction[0]}경매에서 파싱되었습니다.`
+      );
     }
+    // get directory path to save
     let dirPath = document.getElementById("input_dirPath").value;
-    if (res.length != 0) {
+    if (auctionResult.length != 0) {
       let resp = String(
-        ipcRenderer.sendSync("create_xlsx", res, dirPath, arrAuction[0])
+        ipcRenderer.sendSync(
+          "create_xlsx",
+          auctionResult,
+          dirPath,
+          arrAuction[0]
+        )
       );
       if (!resp.includes("Error")) {
         arrSuccessfulAuctionsSaved.push(resp);
@@ -400,8 +417,6 @@ async function parsing(page) {
     let materialEn = material?.replace(/[ㄱ-ㅎ|가-힣]/g, "").trim();
 
     let certi = "";
-    let winningBidUnit = "";
-    let winningBid = "";
     let auctionTitle = document.querySelector("title")?.innerText;
     number = number == undefined ? "" : number;
     artistKr = artistKr == undefined ? "" : artistKr;
@@ -431,8 +446,6 @@ async function parsing(page) {
       materialKr,
       materialEn,
       signPosition,
-      winningBidUnit,
-      winningBid,
       estimateUnit,
       estimateMin,
       estimateMax,
