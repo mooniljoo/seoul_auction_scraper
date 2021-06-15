@@ -382,7 +382,7 @@ async function parsing(page) {
     )?.innerText;
 
     let signPosition = document.querySelector(
-      'p[ng-if="lot.SIGN_INFO_JSON[locale]"]'
+      'p[ng-if="lot.SIGN_INFO_JSON[locale]"] > span> span:nth-child(1)'
     )?.innerText;
 
     let estimate = document.querySelector(
