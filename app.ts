@@ -1,7 +1,7 @@
-const { ipcRenderer } = require("electron");
+// const { ipcRenderer } = require("electron");
+// const rootPath = require("electron-root-path").rootPath;
+// const shell = require("electron").shell;
 const puppeteer = require("puppeteer");
-const rootPath = require("electron-root-path").rootPath;
-const shell = require("electron").shell;
 
 const major: string =
   "https://www.seoulauction.com/currentAuction?sale_kind=offline_only&page=1&lang=ko#page";
@@ -15,13 +15,15 @@ const urlList: any = {
   online: { url: online },
   artsy: { url: artsy },
 };
-const auctionList: string[] = ["online", "artsy"];
+const auctionList: string[] = ["major", "online", "artsy"];
 
 async function configureBrowser() {
   const browser = await puppeteer.launch({
     headless: false,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
+    executablePath:
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   });
   return browser;
 }
@@ -152,7 +154,9 @@ async function scraper(page: any) {
   await page.waitForSelector("ul#auctionList > li .info > a", {
     timeout: 30000,
   });
-  const pageIndex: number = parseInt(await page.url().substr(-1));
+  const pageIndex: number = parseInt(
+    await page.url().split("&lang=ko#page")[1]
+  );
   let artworkIndex: number = 0;
   while (true) {
     const artworkList: any[] = await page.$$("#auctionList > li .info > a");
@@ -161,13 +165,13 @@ async function scraper(page: any) {
 
     //get winningBid
     let winningBidUnit: string = "";
-    const elem_winnindgBid: any = await page.$(
+    const elem_winningBid: any = await page.$(
       "strong[ng-class=\"{txt_impo:viewId == 'CURRENT_AUCTION'}\"]"
     );
-    let winnindgBid: string =
-      elem_winnindgBid == null
+    let winningBid: string =
+      elem_winningBid == null
         ? ""
-        : elem_winnindgBid.evaluate((html: any) => {
+        : elem_winningBid.evaluate((html: any) => {
             return html?.innerText;
           });
 
@@ -178,6 +182,11 @@ async function scraper(page: any) {
         waitUntil: "networkidle0",
       }),
     ]);
+
+    //check if page is indexpage or not
+    if (page.url() == "https://www.seoulauction.com/")
+      throw new Error("Arrive to Index Page");
+
     //wait for load detailPage
     // await page.waitForTimeout(100);
     const detailPage = await page.waitForSelector("div.master_detail", {
@@ -188,16 +197,17 @@ async function scraper(page: any) {
     innerDesc = await parsing(detailPage);
     if (innerDesc == undefined) console.error("파싱에 문제가 있습니다.");
 
-    const description: object = {
+    const description: any = {
       ...outerDesc,
       ...innerDesc,
-      winnindgBid,
+      winningBid,
       winningBidUnit,
     };
     console.log(
       `Page ${pageIndex}\n(${artworkIndex + 1}/${artworkList.length})`
     );
-    console.log(description);
+    // console.log(description);
+    console.log(description.number, description.artistKr);
     descriptionList.push(description);
 
     //go previous page
@@ -240,6 +250,11 @@ async function run() {
     while (true) {
       page = await goPage(page, url + pageIndex);
 
+      // check if page is disabled or not.
+      page.on("dialog", async (dialog: any) => {
+        console.log(dialog.message());
+        await dialog.dismiss();
+      });
       // check if page is active or not
       await page.waitForTimeout(100);
       await page.waitForSelector("#auctionList > li", {
@@ -250,13 +265,20 @@ async function run() {
 
       // run scraper
       await scraper(page)
-        .then((res) => {
+        .then((pageResult) => {
           //page res
-          auctionResult.push(...res);
+          auctionResult.push(...pageResult);
         })
         .catch((e) => {
           console.error(e);
-          browser.close();
+          if (e.includes("index")) {
+            console.log(
+              `해당 ${auctionList[auctionIndex]} 경매가 열리지 않았습니다.`
+            );
+            pageIndex++;
+          } else {
+            console.error(e);
+          }
         });
       pageIndex++;
     }
