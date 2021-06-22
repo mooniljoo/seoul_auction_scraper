@@ -6,35 +6,37 @@ const shell = require("electron").shell;
 const major: string =
   "https://www.seoulauction.com/currentAuction?sale_kind=offline_only&page=1&lang=ko#page";
 const online: string =
-  "https://www.seoulauction.com/currentAuction?sale_kind=online_only&page=1&lang=ko#page1";
+  "https://www.seoulauction.com/currentAuction?sale_kind=online_only&page=1&lang=ko#page";
 const artsy: string =
-  "https://www.seoulauction.com/currentAuction?sale_outside_yn=Y&lang=ko#page1";
+  "https://www.seoulauction.com/currentAuction?sale_outside_yn=Y&lang=ko#page";
 
-const urlList: object = {
+const urlList: any = {
   major: { url: major },
   online: { url: online },
   artsy: { url: artsy },
 };
-const auctionList: string[] = ["major", "online", "artsy"];
+const auctionList: string[] = ["online", "artsy"];
 
 async function configureBrowser() {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
   });
   return browser;
 }
 
-async function goPage(browser: any, url: string) {
+async function createPage(browser: any) {
   const page = await browser.newPage();
+  return page;
+}
+async function goPage(page: any, url: string) {
   //access the website
   await page.goto(url, { waitUntil: "domcontentloaded" });
   return page;
 }
 
 async function parsing(page: any) {
-  console.log("parsing start");
   let description: object = await page.evaluate((html: any) => {
     let number = html.querySelector(
       ".author span.ng-binding.ng-scope"
@@ -128,10 +130,10 @@ async function parsing(page: any) {
 async function scraper(page: any) {
   let outerDesc: object;
   let innerDesc: object;
-  let description: object[] = [];
+  let descriptionList: object[] = [];
 
   //get title
-  const elem_title = await page.waitForSelector("div.title", { timeout: 9000 });
+  const elem_title = await page.waitForSelector("div.title", { timeout: 5000 });
   const auctionTitle: object = await elem_title.evaluate((html: any) => {
     const source = html.querySelector(
       'div.tit > span[ng-bind="sale.TITLE_JSON[locale]"]'
@@ -143,16 +145,17 @@ async function scraper(page: any) {
   });
   outerDesc = { ...auctionTitle };
 
-  outerDesc = { ...outerDesc };
-
   //get artworks
+  // page.waitForNavigation({
+  //   waitUntil: "networkidle0",
+  // })
   await page.waitForSelector("ul#auctionList > li .info > a", {
-    timeout: 9000,
+    timeout: 30000,
   });
+  const pageIndex: number = parseInt(await page.url().substr(-1));
   let artworkIndex: number = 0;
   while (true) {
     const artworkList: any[] = await page.$$("#auctionList > li .info > a");
-    console.log(`현재 페이지에 ${artworkList.length}개의 예술품이 있습니다.`);
     // check if artwork is exist or not
     if (artworkIndex == artworkList.length) break;
 
@@ -171,57 +174,105 @@ async function scraper(page: any) {
     // go to detailPage
     await Promise.all([
       artworkList[artworkIndex].click(),
-      page.waitForNavigation(),
+      page.waitForNavigation({
+        waitUntil: "networkidle0",
+      }),
     ]);
+    //wait for load detailPage
+    // await page.waitForTimeout(100);
     const detailPage = await page.waitForSelector("div.master_detail", {
-      timeout: 9000,
+      timeout: 5000,
     });
 
     //parsing detailPage
     innerDesc = await parsing(detailPage);
     if (innerDesc == undefined) console.error("파싱에 문제가 있습니다.");
 
-    description.push({
+    const description: object = {
       ...outerDesc,
       ...innerDesc,
       winnindgBid,
       winningBidUnit,
-    });
+    };
+    console.log(
+      `Page ${pageIndex}\n(${artworkIndex + 1}/${artworkList.length})`
+    );
+    console.log(description);
+    descriptionList.push(description);
 
-    //go back
-    await Promise.all([page.goBack(), page.waitForNavigation()]);
-    await page.waitForTimeout("3000");
+    //go previous page
+    await Promise.all([
+      page.goBack({
+        timeout: 5000,
+        waitUntil: "networkidle0",
+      }),
+      page.waitForNavigation({
+        waitUntil: "networkidle0",
+      }),
+    ]);
+    //wait for load previous page
+    // await page.waitForTimeout(700);
     artworkIndex++;
   }
 
-  console.log(description);
-  return description;
+  return descriptionList;
 }
 
 async function run() {
-  let result: object[] = [];
+  //init browser
   const browser = await configureBrowser();
-  let pageIndex: number = 1;
+  let page: any = await createPage(browser);
+  //auction loop
+  let auctionIndex: number = 0;
   while (true) {
-    const page = await goPage(browser, major + pageIndex);
-    // check if page is active or not
-    const elem_artworkList = await page.$(".auction_h_list");
-    if (elem_artworkList == null) break;
-    // run scraper
-    scraper(page)
-      .then((res) => {
-        //page res
-        result.push(...res);
-      })
-      .catch((e) => {
-        console.error(e);
-        browser.close();
-      });
-    pageIndex++;
-  }
+    //check if all the auctions have been explored or not
+    if (auctionIndex == auctionList.length) break;
 
-  //  browser.close()
-  return result;
+    //init variable
+    let auctionResult: object[] = [];
+
+    //init url for auction
+    let url = urlList[auctionList[auctionIndex]].url;
+    console.log(`TRY TO ${auctionList[auctionIndex]}`);
+
+    // page loop
+    let pageIndex: number = 1;
+    while (true) {
+      page = await goPage(page, url + pageIndex);
+
+      // check if page is active or not
+      await page.waitForTimeout(100);
+      await page.waitForSelector("#auctionList > li", {
+        timeout: 5000,
+      });
+      const elem_artworkList = await page.$$("#auctionList > li");
+      if (elem_artworkList.length == 0) break;
+
+      // run scraper
+      await scraper(page)
+        .then((res) => {
+          //page res
+          auctionResult.push(...res);
+        })
+        .catch((e) => {
+          console.error(e);
+          browser.close();
+        });
+      pageIndex++;
+    }
+    console.log(`${auctionList[auctionIndex]} LOOP IS OVER.`);
+    // save to xlsx
+    //save_to_xlsx(auctionResult)
+
+    auctionIndex++;
+  }
+  console.log("ALL LOOPS ARE OVER.");
+
+  // browser.close();
 }
 
-run().then((res) => console.log("run", res));
+function onSubmit(): void {
+  run().then((res) => console.log("FinalResult", res));
+}
+
+onSubmit();
