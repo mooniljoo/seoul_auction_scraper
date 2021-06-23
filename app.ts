@@ -1,8 +1,6 @@
 // const { ipcRenderer } = require("electron");
 // const rootPath = require("electron-root-path").rootPath;
 
-import { ConsoleMessage } from "puppeteer";
-
 // const shell = require("electron").shell;
 const puppeteer = require("puppeteer");
 const jsonToXlsx = require("./src/utils/sheetJs");
