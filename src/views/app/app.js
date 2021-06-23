@@ -162,7 +162,6 @@ const urlList = {
   online: { url: online },
   artsy: { url: artsy },
 };
-const auctionList = ["major", "online", "artsy"];
 
 async function configureBrowser() {
   const browser = await puppeteer.launch({
@@ -420,12 +419,14 @@ async function run(url) {
   let arrFailedAuctionsSaved = [];
   let arrClosedAuction = [];
   let arrOpenAuction = [];
-  let auctionIndex = 0;
-  let selector_auction;
+  let browser;
   let page;
+  let selector_auction;
+  let auctionIndex = 0;
+  const auctionList = getArrAuction();
   while (boolRunning) {
     //init browser
-    const browser = await configureBrowser();
+    browser = await configureBrowser();
     page = await createPage(browser);
 
     //access index page
@@ -560,7 +561,7 @@ async function run(url) {
     while (boolRunning) {
       // get directory path to save
       let dirPath = document.getElementById("input_dirPath").value;
-      if (auctionResult.lenght == 0) break;
+      if (auctionResult.length == 0) break;
       console.log("TRY TO save to xlsx");
       let resp = String(
         ipcRenderer.sendSync(
@@ -582,9 +583,14 @@ async function run(url) {
   }
   console.log("ALL LOOPS ARE OVER.");
 
-  // browser.close();
+  browser.close();
   unsetLoading();
-  return arrSuccessfulAuctionsSaved;
+  return {
+    arrOpenAuction,
+    arrClosedAuction,
+    arrSuccessfulAuctionsSaved,
+    arrFailedAuctionsSaved,
+  };
 }
 
 function onSubmit(el) {
@@ -594,9 +600,18 @@ function onSubmit(el) {
   let url = "https://www.seoulauction.com/";
   run(url)
     .then((res) => {
-      console.log(`↓ SCRAPER RESULT ↓\n${res}`);
-      let msg = res;
-      openDialogMsg(msg);
+      console.log("↓ SCRAPER RESULT ↓\n", res);
+      if (boolRunning) {
+        let msg = "";
+        if (res.arrOpenAuction.length == 0) msg += "열려있는 경매가 없습니다.";
+        if (res.arrSuccessfulAuctionsSaved.length > 0)
+          msg += `${res.arrSuccessfulAuctionsSaved} 경매를 저장했습니다.`;
+        if (res.arrFailedAuctionsSaved.length > 0)
+          msg += `${res.arrFailedAuctionsSaved} 경매는 저장에 실패했습니다.`;
+        openDialogMsg(msg);
+      } else {
+        boolRunning = true;
+      }
     })
     .catch((err) => {
       console.error(err);
