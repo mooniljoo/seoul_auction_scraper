@@ -79,7 +79,7 @@ function getArrAuction() {
 }
 async function configureBrowser() {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
   });
@@ -96,15 +96,15 @@ async function scraper(url) {
 
   //ready for browser
   const browser = await configureBrowser();
-  const page = await browser.newPage();
+  let page = await browser.newPage();
   //access the website
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.goto(url, { waitUntil: "networkidle0" });
 
   // close the modal
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(500);
   const button_closeModal = await page.$("#closebtn");
   if (button_closeModal != null) button_closeModal.click();
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(1000);
 
   //DEPTH 1 : auction
   while (boolRunning) {
@@ -134,12 +134,12 @@ async function scraper(url) {
     }
 
     //access the nav
-    await page.waitForSelector(".fl_menu > li", { timeout: 9000 });
+    await page.waitForSelector(".fl_menu > li", { timeout: 0 });
     await page.hover(".fl_menu > li");
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(2000);
 
     console.log(selector_auction);
-    await page.waitForSelector(selector_auction, { timeout: 9000 });
+    await page.waitForSelector(selector_auction, { timeout: 0 });
 
     const button_auction = await page.$(selector_auction + " > span > a");
     console.log(button_auction);
@@ -158,69 +158,99 @@ async function scraper(url) {
       button_auction.click();
 
       // parsing outer description of artwork
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(500);
 
       let outerDesc;
       let winningBid = "";
       let winningBidUnit = "";
       const elem_source = await page.waitForSelector(
         "div.tit > span:nth-child(2)",
-        { timeout: 9000 }
+        { timeout: 0 }
       );
       source = await elem_source.evaluate((el) => el.innerText);
       console.log(`source : ${source}`);
 
       const elem_transactDate = await page.waitForSelector(
         "div.sub.lotlist_memobox > p.ng-scope > span.ng-binding",
-        { timeout: 9000 }
+        { timeout: 0 }
       );
       transactDate = await elem_transactDate.evaluate((el) => el.innerText);
       outerDesc = { source, transactDate, winningBid, winningBidUnit };
 
       // DEPTH 2 : pagination
-      let pageIndex = 2;
+      let url = page.url().split("&lang=ko#page")[0];
+      let pageIndex = parseInt(await page.url().split("&lang=ko#page")[1]);
       while (boolRunning) {
+        //check if page is indexpage or not
+        if (page.url() == "https://www.seoulauction.com/")
+          throw new Error("Index page has been reached.");
         ///// ready for next page
+        // await page.waitForTimeout(1000);
+        // await page.waitForSelector("div.left .page_ul", { timeout : 0 });
+        // const arrPagination = await page.$$("div.left .page_ul > li > a");
+        // console.log(`(${pageIndex} / ${arrPagination.length})`);
+        // if (pageIndex == arrPagination.length - 2) break;
+        // console.log("pageIndex", pageIndex);
+        // arrPagination[pageIndex].click();
+        console.log("\nTRY TO GO NEW PAGE", pageIndex);
+        await page.goto(url + "&lang=ko#page" + pageIndex, {
+          waitUntil: "networkidle0",
+        });
+        console.log(
+          "pageIndex",
+          parseInt(await page.url().split("&lang=ko#page")[1])
+        );
         await page.waitForTimeout(1000);
-        await page.waitForSelector("div.left .page_ul", { timeout: 9000 });
-        const arrPagination = await page.$$("div.left .page_ul > li > a");
-        console.log(`(${pageIndex} / ${arrPagination.length})`);
-        if (pageIndex == arrPagination.length - 2) break;
-        console.log("pageIndex", pageIndex);
-        arrPagination[pageIndex].click();
+        const arrArtwork = await page.$$("#auctionList > li");
+        if (arrArtwork.length == 0 || arrArtwork == null) {
+          console.log("LAST PAGE IS REACHED");
+          break;
+        }
         // DEPTH 3 : artwork
         let artworkIndex = 0;
         let artworkCount = 0;
         while (boolRunning) {
-          await page.waitForTimeout(1000);
-          await page.waitForSelector("#auctionList > li", { timeout: 9000 });
+          await page.waitForTimeout(500);
+          console.log(
+            "pageIndex",
+            parseInt(await page.url().split("&lang=ko#page")[1])
+          );
+          await page.waitForSelector("#auctionList > li", { timeout: 0 });
           const arrArtwork = await page.$$("#auctionList > li");
           artworkCount = arrArtwork.length;
           //check if artwork exists
-          console.log(artworkIndex, arrArtwork.length);
           if (artworkIndex == arrArtwork.length) break;
           //access to new artwork page
           if (
             (await arrArtwork[artworkIndex].$("div.cancel.ng-hide")) != null
           ) {
+            console.log("TRY TO GO DETAIL PAGE");
             let link = await arrArtwork[artworkIndex].$(".info > a");
             link.click();
             // parsing
+            console.log("TRY TO GO PARSING");
             await page.waitForTimeout(500);
             let innerDesc = await parsing(page);
             description = { ...outerDesc, ...innerDesc };
             console.log(
               `(${artworkIndex + 1}/${artworkCount}) ${description.number}|${
                 description.artistKr || description.artistEn
-              }|${description.titleKr || description.titleEn} has completed.`
+              }|${description.titleKr || description.titleEn} has completed.\n`
             );
             auctionResult.push(description);
             // displaying description
             await display_table([description]);
             // go again
-            await page.goBack();
-            console.log("back");
+            console.log("TRY TO GO BACK\n");
+            // await page.goBack();
+            await page.goto(url + "&lang=ko#page" + pageIndex, {
+              waitUntil: "networkidle0",
+            });
             await page.waitForTimeout(500);
+            console.log(
+              "pageIndex",
+              parseInt(await page.url().split("&lang=ko#page")[1])
+            );
           }
           artworkIndex++;
         }
@@ -354,7 +384,7 @@ function openDir(el) {
 }
 
 async function parsing(page) {
-  console.log("parsing start");
+  console.log("PARSING...");
   let description = await page.evaluate(() => {
     // let auctionTitle = document.querySelector(
     //   "#container > div.contents_wrap > div > div.state_wrap > div > div > div:nth-child(1) > ul > li:nth-child(1)"
