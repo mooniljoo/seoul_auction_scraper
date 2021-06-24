@@ -141,31 +141,25 @@ function display_table(arr) {
   });
 }
 
-async function configureBrowser() {
-  const browser = await puppeteer.launch({
-    headless: false,
-    defaultViewport: null,
-    args: ["--window-size=1280,1080"],
-  });
-  return browser;
-}
-
 const major =
   "https://www.seoulauction.com/currentAuction?sale_kind=offline_only&page=1&lang=ko#page";
 const online =
   "https://www.seoulauction.com/currentAuction?sale_kind=online_only&page=1&lang=ko#page";
 const artsy =
   "https://www.seoulauction.com/currentAuction?sale_outside_yn=Y&lang=ko#page";
+const zero =
+  "https://www.seoulauction.com/currentAuction?sale_kind=zerobase_only&page=1&lang=ko#page";
 
 const urlList = {
   major: { url: major },
   online: { url: online },
   artsy: { url: artsy },
+  zero: { url: zero },
 };
 
 async function configureBrowser() {
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
     // executablePath:
@@ -453,7 +447,7 @@ async function run(url) {
         "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(3)";
     } else if (auctionList[auctionIndex] == "zero") {
       selector_auction =
-        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(5)";
+        "#gnbMenuConatiner >div >ul> li:nth-child(2) > ul > li:nth-child(6)";
     } else {
       console.error(
         "웹사이트의 구조가 바뀌었거나 선택하여 불러오려고 하는 옥션의 설정값이 시스템에 저장되어 있지 않습니다."
@@ -512,12 +506,15 @@ async function run(url) {
     while (boolRunning) {
       page = await goPage(page, url + pageIndex);
 
+      await page.waitForSelector("li[title='Next Page']", {
+        timeout: 0,
+      });
       const lastPage = await page.$eval("li[title='Next Page']", (el) => {
         return parseInt(el.previousElementSibling.innerText);
       });
       console.log("lastPage", lastPage);
       console.log("pageIndex == lastPage", pageIndex == lastPage);
-      if (pageIndex == lastPage) break;
+      if (pageIndex == lastPage + 1) break;
 
       // await page.waitForSelector("#auctionList > li", {
       //   timeout: 0,
