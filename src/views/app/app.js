@@ -216,7 +216,7 @@ async function parsing(page) {
     );
     let size = "";
     for (let i = 0; i < elem_size.length; i++) {
-      size += elem_size[i]?.innerText + "\n";
+      size += elem_size[i]?.innerText + " \n";
     }
     size = size.trim();
 
