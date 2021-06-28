@@ -211,9 +211,15 @@ async function parsing(page) {
       'span[ng-if="lot.MATE_NM_EN"]'
     )?.innerText;
 
-    let size = document.querySelector(
+    let elem_size = document.querySelectorAll(
       'p[ng-repeat="size in lot.LOT_SIZE_JSON"]'
-    )?.innerText;
+    );
+    let size = "";
+    for (let i = 0; i < elem_size.length; i++) {
+      size += elem_size[i]?.innerText + "\n";
+    }
+    size = size.trim();
+
     let edition = document.querySelector(
       ".title .mat span[ng-bind='lot.EDITION']"
     )?.innerText;
